@@ -1,0 +1,254 @@
+---
+title: Wix & Astro
+description: Add content to your Astro project using Wix as a CMS
+sidebar:
+  label: Wix
+type: cms
+stub: false
+service: Wix
+i18nReady: true
+---
+import PackageManagerTabs from '~/components/tabs/PackageManagerTabs.astro';
+
+[Wix](https://wix.com) is a visual website builder with a headless CMS and business solutions APIs, that can be used to provide content and 
+power your Astro project.
+
+## Integrating with Astro
+
+The Wix integration for Astro allows you to build custom frontends with Astro on top of the Wix Developer Platform. The integration 
+provides a boilerplate-free development experience with a set of tools to help streamline your development with Wix.
+
+The main features of the Wix integration for Astro include:
+
+- **Easy SDK Integration**: Use the Wix SDK modules directly through a pre-initialized and contextually available `WixClient`.
+- **Session Management Middleware**: A middleware that manages a session cookie for the current site visitor.
+- **Adapter for Wix Hosting**: The integration provides an adapter for Wix hosting, allowing you to deploy your Astro project to Wix hosting.
+
+### Prerequisites
+
+To get started with the Wix integration for Astro, you will need to have the following:
+
+1. **An Astro project** - If you don't have an Astro project yet, our [Installation guide](/en/install-and-setup/) will get you up and running in no time. 
+:::note[Choosing a template]
+Wix offers a collection of Astro templates that are pre-configured with the Wix integration for Astro and act as a starting point for different types of projects. 
+Check out our Wix Astro templates on GitHub: [wix/headless-templates/astro](https://github.com/wix/headless-templates/tree/main/astro).
+:::
+2. **A Wix Account and a Wix Site / Business** - If you don't have a Wix account yet, you can sign up 
+for an account and create your first project with [Wix Headless](https://www.wix.com/studio/developers/headless).
+3. **A Wix Client ID** - You will need a Wix Client ID to authenticate your Astro project with Wix APIs. To create 
+a new OAuth App and obtain a Wix Client ID, check out our documentation on 
+[Create an OAuth App](https://dev.wix.com/docs/go-headless/getting-started/setup/authentication/create-an-oauth-app-for-visitors-and-members).
+
+### Setting up credentials
+
+:::tip
+If you are deploying your project to Wix, check out the guide on [Environment Variables with the Wix Custom Frontends CLI](../cli//local-development.md).
+:::
+
+The Wix integration requires the `WIX_CLIENT_ID` environment variable to be set. For local development, you can create a 
+`.env.local` file in the root of your project and add the `WIX_CLIENT_ID` environment variable.
+
+```ini title=".env.local"
+WIX_CLIENT_ID=your-wix-client-id
+```
+
+### Add the Wix Integration to an Existing Astro Project
+
+If you already have an Astro project or didn't start from a pre-configured Wix template, you can add the Wix integration to an existing Astro project.
+
+<PackageManagerTabs>
+  <Fragment slot="npm">
+  ```shell
+  npx astro add @wix/astro
+  ```
+  </Fragment>
+  <Fragment slot="pnpm">
+  ```shell
+  pnpm astro add @wix/astro
+  ```
+  </Fragment>
+  <Fragment slot="yarn">
+  ```shell
+  yarn astro add @wix/astro
+  ```
+  </Fragment>
+</PackageManagerTabs>
+
+This will install the Wix integration for Astro and add add the necessary configuration to your project.
+
+:::note[Deploying to Wix]
+The Wix integration also provides an adapter for hosting on Wix Custom Frontends. If you are deploying your Astro project to Wix,
+be sure to change your `astro.config.ts` so that the integration is used as an adapter. See more at [Deploying to Wix](#deploying-to-wix).
+
+```ts title="astro.config.mjs"
+import wix from "@wix/astro";
+
+export default {
+  // ...
+  adapter: wix(),
+};
+```
+:::
+
+### Installing the Wix SDK Modules
+
+To work with the Wix APIs in your Astro project, the Wix Integration provides a pre-initialized and contextually 
+available `WixClient` that allows you to use the Wix SDK modules directly in your Astro project. To use the SDK modules,
+just install the relevant npm package and import the modules in your Astro components.
+
+For example, for an online store project, you'll need to install the `@wix/stores` and `@wix/ecom` npm packages.
+
+<PackageManagerTabs>
+  <Fragment slot="npm">
+  ```shell
+  npm install @wix/stores @wix/ecom
+  ```
+  </Fragment>
+  <Fragment slot="pnpm">
+  ```shell
+  pnpm add @wix/stores @wix/ecom
+  ```
+  </Fragment>
+  <Fragment slot="yarn">
+  ```shell
+  yarn add @wix/stores @wix/ecom
+  ```
+  </Fragment>
+</PackageManagerTabs>
+
+:::tip
+To get started with the Wix SDK modules and learn about all the available modules, check out the [Wix SDK documentation](https://dev.wix.com/docs/sdk).
+:::
+
+### SDK Modules in Astro Components frontmatter
+
+You can use any of the SDK modules in your Astro components frontmatter to fetch data at build time or on-demand. There's no need to create an explicit `WixClient` and methods can be called directly.
+
+```astro
+---
+import { products } from "@wix/stores";
+
+const storeProducts = await products.queryProducts().find();
+---
+
+<h1>Products</h1>
+
+{storeProducts.map((product) => (
+  <div>
+    <h2>{product.name}</h2>
+    <p>{product.description}</p>
+  </div>
+))}
+```
+
+#### Pre-rendering
+
+When used in pre-rendered components or pages, the SDK modules will use an automatically generated visitor session for the entire build. 
+This means you'll only be able to access public data, and any data that requires a visitor session will be reset on each build.
+
+> 💡 If you are working with APIs that require a **current visitor session** (like the ecommerce current cart APIs), be sure to set 
+the relevant pages / components to [on-demand rendering](#on-demand-rendering).
+
+##### On-demand rendering
+
+When used in on-demand rendered components or pages, the SDK modules will use the current visitor session. This means you'll be able to 
+access data that requires a visitor session, and the data will be fetched on-demand when the page is visited.
+
+Visitor session management is handled by the [Session Management Middleware](#session-management-middleware).
+
+### SDK Modules in Scripts / UI Frameworks
+
+You can also use the SDK modules in your scripts or UI frameworks. Just import the modules and use them as you would in any other JavaScript environment.
+
+```html
+<p>Products in store: <span id="productsCount">...</span></p>
+<script>
+import { products } from "@wix/stores";
+
+const storeProducts = await products.queryProducts().find();
+
+document.getElementById("productsCount").innerText = storeProducts.items.length;
+</script>
+```
+
+In your scripts or UI framework components, your API calls will be authenticated with the current visitor session as managed by the 
+[Session Management Middleware](#session-management-middleware).
+
+### Deploying to Wix Custom Frontends
+
+The Wix integration provides an adapter for Wix hosting, allowing you to deploy your Astro project to Wix Custom Frontends. 
+With Wix Custom Frontends, you get a serverless hosting solution that can power any Astro project, both with static output, 
+server output and mixed output. This allows you to build static and dynamic sites with Astro and deploy them to Wix.
+
+To deploy your Astro project to Wix Custom Frontends, you'll need to set up the Wix integration as an adapter in your `astro.config.ts`.
+
+```ts title="astro.config.mjs"
+import wix from "@wix/astro";
+
+export default {
+  // ...
+  adapter: wix(),
+};
+```
+
+To deploy your project to Wix, you'll use the [Wix Custom Frontends CLI](../cli/deploying-to-wix.md) to upload your build output to Wix.
+First, install the Wix Custom Frontends CLI:
+
+<PackageManagerTabs>
+  <Fragment slot="npm">
+  ```shell
+  npm install --dev @wix/cli-edge
+  ```
+  </Fragment>
+  <Fragment slot="pnpm">
+  ```shell
+  pnpm add --dev @wix/cli-edge
+  ```
+  </Fragment>
+  <Fragment slot="yarn">
+  ```shell
+  yarn add --dev @wix/cli-edge
+  ```
+  </Fragment>
+</PackageManagerTabs>
+
+Then, build your Astro project and deploy it to Wix:
+
+<PackageManagerTabs>
+  <Fragment slot="npm">
+  ```shell
+  npx astro build
+  npx wix edge deploy --prod
+  ```
+  </Fragment>
+  <Fragment slot="pnpm">
+  ```shell
+  pnpm build
+  pnpm wix edge deploy --prod
+  ```
+  </Fragment>
+  <Fragment slot="yarn">
+  ```shell
+  yarn build
+  yarn wix edge deploy --prod
+  ```
+  </Fragment>
+</PackageManagerTabs>
+
+Your Astro project will be deployed to Wix Custom Frontends and will be available at the URL of your Wix site.
+
+:::note[Wix Custom Frontends CLI]
+For more information on working with the CLI and deploying to Wix Custom Frontends, check 
+out the [Wix Custom Frontends CLI documentation](https://www.npmjs.com/package/@wix/cli-edge).
+:::
+
+## Building a Blog with Wix and Astro
+
+TODO
+
+## Official Resources
+
+- [Wix Astro Integration](https://github.com/wix-incubator/headless-integrations/tree/main/packages/%40wix-astro#readme) - An Astro integration for building Astro projects on top of Wix.
+- [Wix SDK Documentation](https://dev.wix.com/docs/sdk) - The official documentation for the Wix SDK modules.
+- [Wix Custom Frontends CLI](https://www.npmjs.com/package/@wix/cli-edge) - The official CLI for deploying to Wix Custom Frontends.
+- [Wix Astro Templates on GitHub](https://github.com/wix/headless-templates/tree/main/astro) - Pre-configured Astro templates with the Wix integration for Astro.
